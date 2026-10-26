@@ -207,6 +207,34 @@
     .btn:disabled { cursor:default; opacity:.58; }
     .clear-btn { color:#858995; background:transparent; border-color:transparent; padding:0 4px; }
 
+    .welcome-dialog { width:min(460px, calc(100vw - 32px)); max-width:none; max-height:min(88svh, 680px); overflow:auto; margin:auto; padding:clamp(23px, 5vw, 34px); border:1px solid rgba(255,255,255,.14); border-radius:22px; color:#f1f1f2; background:radial-gradient(ellipse at 80% 0%, rgba(108,145,164,.14), transparent 55%), linear-gradient(150deg, #171a23, #0d0f16 72%); box-shadow:0 32px 100px rgba(0,0,0,.58); }
+    .welcome-dialog::backdrop { background:rgba(4,6,10,.72); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
+    .welcome-dialog[open] { animation:welcomeIn .28s cubic-bezier(.2,.75,.25,1) both; }
+    .welcome-mark { display:grid; place-items:center; width:38px; height:38px; margin-bottom:20px; border:1px solid rgba(173,210,215,.26); border-radius:50%; color:#b5d9db; background:rgba(145,194,197,.08); font-size:18px; }
+    .welcome-kicker { color:#9aa8b3; font-size:9px; letter-spacing:.18em; text-transform:uppercase; }
+    .welcome-title { margin:9px 0 0; color:#f1f1f2; font:400 clamp(25px, 6vw, 32px)/1.12 Georgia,serif; letter-spacing:-.035em; }
+    .welcome-copy { margin:15px 0 0; color:#b2b6c0; font-size:12px; line-height:1.8; }
+    .welcome-choice-note { margin:17px 0 0; color:#7e8993; font-size:10px; line-height:1.5; }
+    .welcome-actions { display:grid; gap:9px; margin-top:22px; }
+    .welcome-actions .btn { width:100%; min-height:45px; font-size:12px; }
+    .welcome-secondary { border-color:rgba(255,255,255,.11); background:rgba(255,255,255,.025); color:#c2c6cf; }
+    .welcome-tertiary { min-height:36px !important; border-color:transparent; background:transparent; color:#89909b; }
+    .example-panel[hidden], .welcome-intro[hidden], .example-result[hidden] { display:none; }
+    .example-heading { margin:0; color:#f1f1f2; font:400 22px/1.2 Georgia,serif; letter-spacing:-.025em; }
+    .example-lead { margin:9px 0 16px; color:#9da4af; font-size:11px; line-height:1.65; }
+    .example-list { display:grid; gap:8px; }
+    .example-situation { display:block; width:100%; padding:12px 13px; border:1px solid rgba(255,255,255,.1); border-radius:12px; background:rgba(255,255,255,.025); color:#e8e9ec; text-align:left; cursor:pointer; transition:background .18s,border-color .18s; }
+    .example-situation:hover, .example-situation:focus-visible { border-color:rgba(173,210,215,.42); background:rgba(145,194,197,.08); outline:none; }
+    .example-situation strong { display:block; font-size:11px; font-weight:600; }
+    .example-situation span { display:block; margin-top:4px; color:#9299a4; font-size:10px; line-height:1.45; }
+    .example-result { margin-top:14px; padding:15px; border:1px solid rgba(173,210,215,.18); border-radius:14px; background:rgba(145,194,197,.055); }
+    .example-result-label { margin:0 0 6px; color:#9fbfc1; font-size:9px; letter-spacing:.13em; text-transform:uppercase; }
+    .example-result-title { margin:0; color:#f0f1f2; font:400 18px/1.3 Georgia,serif; }
+    .example-result-copy { margin:8px 0 0; color:#b2b8c1; font-size:11px; line-height:1.65; }
+    .example-step { margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,.09); color:#c8cdd2; font-size:11px; line-height:1.6; }
+    .example-step strong { color:#d8e8e8; font-weight:600; }
+    @keyframes welcomeIn { from { opacity:0; transform:translateY(9px) scale(.985); } to { opacity:1; transform:translateY(0) scale(1); } }
+
     .notice { max-width:240px; color:#676c78; font-size:9px; line-height:1.5; text-align:right; }
     @keyframes breathe { from { margin-top:-1.6%; opacity:.65; } to { margin-top:1.6%; opacity:1; } }
     @keyframes pulse { 50% { opacity:.35; } }
@@ -268,6 +296,10 @@
       .btn { min-height:44px; padding-inline:13px; }
       .clear-btn { padding-inline:9px; }
       .response-option { min-height:40px; }
+      .welcome-dialog { width:calc(100vw - 28px); padding:23px 20px; border-radius:19px; }
+      .welcome-mark { margin-bottom:15px; }
+      .welcome-copy { font-size:11px; line-height:1.7; }
+      .welcome-actions { margin-top:18px; }
       .notice { max-width:none; text-align:left; }
     }
     @media (max-width:360px) {
@@ -288,6 +320,42 @@
     <div class="aura"></div><div class="grain"></div><div class="vignette"></div>
   </div>
 
+  <dialog id="modelWelcome" class="welcome-dialog" aria-labelledby="welcomeTitle" aria-describedby="welcomeCopy">
+    <div class="welcome-mark" aria-hidden="true">◌</div>
+    <div class="welcome-kicker">A gentle note before you begin</div>
+    <h2 id="welcomeTitle" class="welcome-title">A little help noticing what’s here</h2>
+    <div id="welcomeIntro" class="welcome-intro">
+      <p id="welcomeCopy" class="welcome-copy">Try a private, in-browser model that suggests possible emotion tags from your writing. Only if you choose to try it, the model downloads into this browser; your writing is analyzed here and isn’t sent to an AI inference service or saved automatically. This is experimental, not a diagnosis, and its suggestions can miss the mark—keep what helps and leave the rest.</p>
+      <p class="welcome-choice-note">You can try it with your own words, explore an example first, or simply write and decide later.</p>
+      <div class="welcome-actions">
+        <button id="welcomeTryButton" class="btn primary" type="button">Try with my own words</button>
+        <button id="welcomeExamplesButton" class="btn welcome-secondary" type="button">Explore a situation first</button>
+        <button id="welcomeLaterButton" class="btn welcome-tertiary" type="button">Maybe later — just let me write</button>
+      </div>
+    </div>
+    <section id="welcomeExamples" class="example-panel" aria-labelledby="exampleHeading" hidden>
+      <h3 id="exampleHeading" class="example-heading">A moment like yours?</h3>
+      <p class="example-lead">Choose a situation to see a few possible feelings and one gentle way to work through it. There isn’t one right interpretation.</p>
+      <div class="example-list">
+        <button class="example-situation" type="button" data-situation="waiting"><strong>Waiting for a reply</strong><span>You sent a message and haven’t heard back.</span></button>
+        <button class="example-situation" type="button" data-situation="feedback"><strong>Getting difficult feedback</strong><span>Someone points out something you could have done better.</span></button>
+        <button class="example-situation" type="button" data-situation="plans"><strong>Plans change unexpectedly</strong><span>A day you were counting on suddenly looks different.</span></button>
+        <button class="example-situation" type="button" data-situation="argument"><strong>After a tense conversation</strong><span>You’re still replaying an argument with someone important.</span></button>
+      </div>
+      <div id="exampleResult" class="example-result" aria-live="polite" hidden>
+        <p class="example-result-label">One possible read</p>
+        <h4 id="exampleResultTitle" class="example-result-title"></h4>
+        <p id="exampleResultCopy" class="example-result-copy"></p>
+        <div class="example-step"><strong>A next step to consider:</strong> <span id="exampleResultStep"></span></div>
+      </div>
+      <div class="welcome-actions">
+        <button id="welcomeExamplesTryButton" class="btn primary" type="button">Now try with my own words</button>
+        <button id="welcomeExamplesBackButton" class="btn welcome-secondary" type="button">Back to choices</button>
+        <button id="welcomeExamplesLaterButton" class="btn welcome-tertiary" type="button">Maybe later — just let me write</button>
+      </div>
+    </section>
+  </dialog>
+
   <main class="app">
     <header class="topbar">
       <div class="brand-group">
@@ -298,15 +366,15 @@
         <div class="engine" role="status" aria-live="polite">
           <span id="engineIndicator" class="engine-indicator"></span>
           <div class="engine-text">
-            <div id="engineTitle" class="engine-title">Getting your thought space ready</div>
-            <div id="engineDetail" class="engine-detail">You can start writing while the model loads.</div>
+            <div id="engineTitle" class="engine-title">Model not started</div>
+            <div id="engineDetail" class="engine-detail">Choose if and when to enable emotion suggestions.</div>
           </div>
           <div id="modelProgress" class="engine-progress" data-indeterminate="true" role="progressbar" aria-label="Model download progress" aria-valuemin="0" aria-valuemax="100" aria-valuetext="Preparing model" hidden>
             <span class="progress-track" aria-hidden="true"><span id="modelProgressFill" class="progress-fill"></span></span>
             <span id="modelProgressText" class="progress-copy">Preparing…</span>
           </div>
         </div>
-        <button id="activateButton" class="btn primary" type="button"><span aria-hidden="true">◌</span><span>Preparing model…</span></button>
+        <button id="activateButton" class="btn primary" type="button"><span aria-hidden="true">◌</span><span>Try emotion analysis</span></button>
       </div>
     </header>
 
@@ -392,6 +460,20 @@
     const engineDetail = document.querySelector('#engineDetail');
     const topbarTools = document.querySelector('.topbar-tools');
     const activateButton = document.querySelector('#activateButton');
+    const welcomeDialog = document.querySelector('#modelWelcome');
+    const welcomeTryButton = document.querySelector('#welcomeTryButton');
+    const welcomeIntro = document.querySelector('#welcomeIntro');
+    const welcomeExamplesButton = document.querySelector('#welcomeExamplesButton');
+    const welcomeExamples = document.querySelector('#welcomeExamples');
+    const welcomeLaterButton = document.querySelector('#welcomeLaterButton');
+    const welcomeExamplesBackButton = document.querySelector('#welcomeExamplesBackButton');
+    const welcomeExamplesTryButton = document.querySelector('#welcomeExamplesTryButton');
+    const welcomeExamplesLaterButton = document.querySelector('#welcomeExamplesLaterButton');
+    const exampleResult = document.querySelector('#exampleResult');
+    const exampleResultTitle = document.querySelector('#exampleResultTitle');
+    const exampleResultCopy = document.querySelector('#exampleResultCopy');
+    const exampleResultStep = document.querySelector('#exampleResultStep');
+    const exampleSituations = document.querySelectorAll('.example-situation');
     const modelProgress = document.querySelector('#modelProgress');
     const modelProgressFill = document.querySelector('#modelProgressFill');
     const modelProgressText = document.querySelector('#modelProgressText');
@@ -418,6 +500,29 @@
     let workerUrl = null;
     let modelReady = false;
     let modelLoading = false;
+    const modelConsentKey = 'thoughts-unfolded-model-choice';
+    const exampleReflections = {
+      waiting: {
+        title: 'Uncertainty, worry, or a wish for reassurance',
+        copy: 'A delayed reply is a fact; “they’re upset with me” is one possible explanation, not something you know yet. The uncertainty may be touching a need for connection or clarity.',
+        step: 'Name what you know and what you’re guessing. Give yourself a short pause, then decide whether a calm follow-up would help—or whether you can wait for more information.'
+      },
+      feedback: {
+        title: 'Embarrassment, frustration, or fear of getting it wrong',
+        copy: 'Feedback can sting and still contain useful information. One comment about a task does not define your ability or your worth.',
+        step: 'Let the first reaction settle. Then separate the specific point you can act on from any broad conclusion you’re making about yourself, and choose one small improvement.'
+      },
+      plans: {
+        title: 'Disappointment, stress, or loss of control',
+        copy: 'It can be hard when something you counted on changes. The intensity may reflect how important the plan was, or how much else is already on your plate.',
+        step: 'Acknowledge what you were looking forward to. Check what still needs attention today, then choose whether to make a new plan, ask for help, or take a brief reset.'
+      },
+      argument: {
+        title: 'Hurt, anger, or a need to feel understood',
+        copy: 'Replaying a tense conversation can be a sign that something felt unresolved. You may be holding several feelings at once, and you don’t have to decide who was entirely right while you’re activated.',
+        step: 'Take a little space to settle first. Later, identify the one thing you most want the other person to understand, and consider saying it with “I felt…” and a clear request or boundary.'
+      }
+    };
     let debounceTimer = null;
     let revision = 0;
     let latestSentId = 0;
@@ -639,6 +744,52 @@
       }
     }
 
+    function readModelChoice() {
+      try { return sessionStorage.getItem(modelConsentKey); }
+      catch { return null; }
+    }
+
+    function saveModelChoice(choice) {
+      try { sessionStorage.setItem(modelConsentKey, choice); }
+      catch { /* The choice still applies for this page view. */ }
+    }
+
+    function showExamplePicker() {
+      welcomeIntro.hidden = true;
+      welcomeExamples.hidden = false;
+      exampleResult.hidden = true;
+      welcomeExamples.querySelector('.example-situation')?.focus();
+    }
+
+    function showExampleReflection(situation) {
+      const reflection = exampleReflections[situation];
+      if (!reflection) return;
+      exampleResultTitle.textContent = reflection.title;
+      exampleResultCopy.textContent = reflection.copy;
+      exampleResultStep.textContent = reflection.step;
+      exampleResult.hidden = false;
+    }
+
+    function showWelcomeChoices() {
+      welcomeExamples.hidden = true;
+      welcomeIntro.hidden = false;
+      welcomeExamplesButton.focus();
+    }
+
+    function continueWithoutAnalysis() {
+      saveModelChoice('later');
+      if (welcomeDialog.open) welcomeDialog.close('later');
+      setEngine('', 'Model not started', 'You can write without emotion suggestions, or start them whenever you choose.');
+      editor.focus();
+    }
+
+    function tryEmotionAnalysis() {
+      saveModelChoice('try');
+      if (welcomeDialog.open) welcomeDialog.close('try');
+      editor.focus();
+      activateModel();
+    }
+
     function getAnalysisPassage(text) {
       return text.trim().slice(-1800);
     }
@@ -657,7 +808,7 @@
       if (!passage || passage.length < 8) {
         clearSignals();
         if (modelReady) setEngine('ready', 'Local model is ready', 'Write a little more to produce language signals.');
-        else setEngine('', 'The model is resting', 'Activate local emotion analysis when you’re ready.');
+        else setEngine('', 'Model not started', 'You can write without emotion suggestions, or start them whenever you choose.');
         return;
       }
       if (!modelReady) return;
@@ -998,7 +1149,18 @@
       queueAnalysis();
     });
 
-    activateButton.addEventListener('click', activateModel);
+    activateButton.addEventListener('click', tryEmotionAnalysis);
+    welcomeTryButton.addEventListener('click', tryEmotionAnalysis);
+    welcomeExamplesButton.addEventListener('click', showExamplePicker);
+    welcomeExamplesBackButton.addEventListener('click', showWelcomeChoices);
+    welcomeExamplesTryButton.addEventListener('click', tryEmotionAnalysis);
+    welcomeLaterButton.addEventListener('click', continueWithoutAnalysis);
+    welcomeExamplesLaterButton.addEventListener('click', continueWithoutAnalysis);
+    exampleSituations.forEach(button => button.addEventListener('click', () => showExampleReflection(button.dataset.situation)));
+    welcomeDialog.addEventListener('cancel', event => {
+      event.preventDefault();
+      continueWithoutAnalysis();
+    });
     clearButton.addEventListener('click', () => {
       editor.replaceChildren();
       updateStats();
@@ -1006,7 +1168,7 @@
       clearTimeout(debounceTimer);
       clearSignals();
       if (modelReady) setEngine('ready', 'Local model is ready', 'Canvas cleared. This page does not save your writing automatically.');
-      else setEngine('', 'The model is resting', 'Activate local emotion analysis when you’re ready.');
+      else setEngine('', 'Model not started', 'You can write without emotion suggestions, or start them whenever you choose.');
       editor.focus();
     });
 
@@ -1016,7 +1178,11 @@
     });
 
     updateStats();
-    window.setTimeout(activateModel, 300);
+    if (readModelChoice() === 'try') window.setTimeout(activateModel, 300);
+    else {
+      setEngine('', 'Model not started', 'Choose if and when to enable emotion suggestions.');
+      if (readModelChoice() !== 'later') window.requestAnimationFrame(() => welcomeDialog.showModal());
+    }
   </script>
 </body>
 </html>
