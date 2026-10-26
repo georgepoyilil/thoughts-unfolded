@@ -1,0 +1,1023 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#08090d">
+  <meta name="description" content="A private, browser-based metacognitive writing space for reflecting on possible emotional signals and what matters to you.">
+  <title>Thoughts, Unfolded — a living writing space</title>
+  <style>
+    @property --mood-hue {
+      syntax: "<number>";
+      inherits: true;
+      initial-value: 194;
+    }
+    @property --mood-scale {
+      syntax: "<number>";
+      inherits: true;
+      initial-value: 1;
+    }
+    @property --mood-alpha {
+      syntax: "<number>";
+      inherits: true;
+      initial-value: .15;
+    }
+
+    :root {
+      color-scheme: dark;
+      --ink: #f1f1f2;
+      --muted: #90939e;
+      --faint: #60636d;
+      --line: rgba(255,255,255,.10);
+      --panel: rgba(14,16,23,.65);
+      --mood-hue: 194;
+      --mood-scale: 1;
+      --mood-alpha: .15;
+      --ease: cubic-bezier(.2,.75,.25,1);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; margin: 0; }
+    body {
+      min-height: 100svh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      color: var(--ink);
+      background: #08090d;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button { font: inherit; }
+    button:focus-visible, [contenteditable="true"]:focus-visible {
+      outline: 2px solid hsl(var(--mood-hue) 85% 70% / .8);
+      outline-offset: 5px;
+    }
+
+    .scene {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 65% 56% at 50% 52%, hsl(var(--mood-hue) 48% 12% / .34), transparent 74%),
+        radial-gradient(ellipse 55% 85% at 50% 110%, #11141d 0%, transparent 65%),
+        #08090d;
+      transition: background 1.3s var(--ease);
+    }
+    .aura {
+      position: absolute;
+      width: min(95vw, 1120px);
+      aspect-ratio: 1;
+      left: 50%;
+      top: 48%;
+      transform: translate(-50%, -50%) scale(var(--mood-scale));
+      border-radius: 50%;
+      background: radial-gradient(circle, hsl(var(--mood-hue) 78% 38% / var(--mood-alpha)) 0%, hsl(var(--mood-hue) 78% 28% / calc(var(--mood-alpha) * .48)) 24%, transparent 68%);
+      filter: blur(34px);
+      opacity: .88;
+      transition: transform 1.6s var(--ease), background 1.2s var(--ease), opacity 1.2s var(--ease);
+      animation: breathe 11s ease-in-out infinite alternate;
+    }
+    .grain {
+      position: absolute;
+      inset: 0;
+      opacity: .12;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.92' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.28'/%3E%3C/svg%3E");
+      mix-blend-mode: screen;
+    }
+    .vignette { position:absolute; inset:0; background:radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,.54) 100%); }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 100svh;
+      max-width: 1720px;
+      margin: 0 auto;
+      padding: 24px clamp(20px, 4.2vw, 68px) 22px;
+    }
+    .topbar, .footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+    .brand-group { display:flex; align-items:center; gap:18px; min-width:0; }
+    .topbar-tools { display:flex; align-items:center; justify-content:flex-end; gap:14px; min-width:0; }
+    .topbar-tools[data-ready="true"] { gap:9px; }
+    .topbar-tools[data-ready="true"] .engine { grid-template-columns:7px auto; }
+    .topbar-tools[data-ready="true"] .engine-indicator { grid-row:1; }
+    .topbar-tools[data-ready="true"] .engine-text { display:flex; align-items:center; }
+    .topbar-tools[data-ready="true"] .engine-detail { display:none; }
+    .topbar-tools[data-ready="true"] .btn.primary { min-height:32px; padding-inline:11px; font-size:10px; }
+    .brand { display:flex; align-items:center; gap:11px; letter-spacing:.13em; text-transform:uppercase; font-size:11px; font-weight:650; }
+    .brand-mark {
+      display:grid; place-items:center; width:27px; height:27px; border:1px solid rgba(255,255,255,.24); border-radius:50%;
+      color:hsl(var(--mood-hue) 82% 74%); font-size:15px; line-height:1;
+      transition:color 1s var(--ease), border-color 1s var(--ease);
+    }
+    .privacy { display:flex; align-items:center; gap:8px; color:#9c9faa; font-size:11px; letter-spacing:.04em; }
+    .privacy-dot { width:6px; height:6px; border-radius:50%; background:#7ec9ae; box-shadow:0 0 12px rgba(126,201,174,.5); }
+
+    .workspace { width:min(1240px, 100%); align-self:center; justify-self:center; display:grid; grid-template-columns:minmax(0, 1fr) minmax(270px, 340px); gap:clamp(34px, 5vw, 82px); align-items:center; padding:28px 0 36px; }
+    .writer-column { min-width:0; position:relative; }
+    .insight-column { min-width:0; display:flex; flex-direction:column; gap:13px; }
+    .insight-card { border:1px solid rgba(255,255,255,.105); border-radius:17px; padding:18px 17px; background:linear-gradient(145deg, rgba(20,23,32,.72), rgba(10,12,18,.60)); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); box-shadow:0 18px 48px rgba(0,0,0,.12); }
+    .card-kicker { color:#777e8c; font-size:9px; letter-spacing:.17em; text-transform:uppercase; }
+    .card-title { margin:8px 0 0; font-family:Georgia,serif; font-size:22px; line-height:1.2; font-weight:400; letter-spacing:-.025em; }
+    .card-copy { margin:9px 0 0; color:#9398a5; font-size:11px; line-height:1.75; }
+    .emotion-actions { display:grid; gap:7px; margin:12px 0 0; padding-left:18px; color:#c8ccd5; font-size:11px; line-height:1.55; }
+    .emotion-actions li::marker { color:#8e9cac; }
+    .pattern-signals { display:flex; flex-wrap:wrap; gap:6px; margin-top:13px; }
+    .signal-chip { display:inline-flex; align-items:center; gap:6px; border:1px solid rgba(255,255,255,.12); border-radius:999px; padding:5px 8px; color:#d6d8df; background:rgba(255,255,255,.035); font-size:10px; }
+    .signal-chip .dot { width:5px; height:5px; border-radius:50%; background:var(--chip-color, #9aa5bc); box-shadow:0 0 10px var(--chip-color, #9aa5bc); }
+    .reflection-question { margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,.09); color:#c6c9d2; font-family:Georgia,serif; font-size:15px; line-height:1.55; }
+    .fit-check { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+    .fit-choice { padding:6px 8px; border:1px solid rgba(255,255,255,.12); border-radius:999px; background:transparent; color:#aeb4c1; font:400 10px/1.3 ui-sans-serif,system-ui,sans-serif; cursor:pointer; }
+    .fit-choice:hover,.fit-choice[aria-pressed="true"] { border-color:hsl(var(--mood-hue) 62% 70% / .45); background:hsl(var(--mood-hue) 40% 50% / .09); color:#f1f2f6; }
+    .fit-feedback { min-height:1.4em; margin:7px 0 0; color:#949ba9; font-size:10px; line-height:1.5; }
+    .caveat { margin-top:10px; color:#666d7b; font-size:9px; line-height:1.6; }
+    .response-options { display:grid; gap:7px; margin-top:12px; }
+    .response-option { display:flex; align-items:center; gap:9px; width:100%; padding:9px 10px; border:1px solid rgba(255,255,255,.10); border-radius:9px; background:rgba(255,255,255,.025); color:#cbd0db; text-align:left; font:400 12px/1.4 ui-sans-serif,system-ui,sans-serif; cursor:pointer; transition:background .18s ease,border-color .18s ease,color .18s ease; }
+    .response-option::before { content:''; flex:0 0 7px; width:7px; height:7px; border:1px solid hsl(var(--mood-hue) 62% 70% / .75); border-radius:50%; }
+    .response-option:hover,.response-option[aria-pressed="true"] { border-color:hsl(var(--mood-hue) 62% 70% / .4); background:hsl(var(--mood-hue) 40% 50% / .09); color:#fff; }
+    .response-option[aria-pressed="true"]::before { background:hsl(var(--mood-hue) 72% 70%); box-shadow:0 0 9px hsl(var(--mood-hue) 72% 70% / .5); }
+    .response-option:focus-visible,.response-add:focus-visible { outline:2px solid hsl(var(--mood-hue) 85% 70% / .8); outline-offset:2px; }
+    .response-detail { display:none; margin-top:12px; padding:12px; border-left:2px solid hsl(var(--mood-hue) 62% 70% / .62); background:rgba(255,255,255,.025); }
+    .response-detail.is-visible { display:block; }
+    .response-detail p { margin:0; color:#cbd0db; font:400 13px/1.55 Georgia,serif; }
+    .response-detail .response-prompt { margin-top:8px; color:#949ba9; font:400 11px/1.6 ui-sans-serif,system-ui,sans-serif; }
+    .response-add { margin-top:9px; padding:0; border:0; background:transparent; color:hsl(var(--mood-hue) 72% 77%); font:500 10px/1.4 ui-sans-serif,system-ui,sans-serif; cursor:pointer; }
+    .empty-state { color:#727987; font-size:11px; line-height:1.7; }
+    /* Desktop: reserve a real annotation rail so emotion tags never sit on top of the user's words. */
+    .tag-constellation { grid-column:2; grid-row:1; position:relative; inset:auto; z-index:1; display:flex; flex-direction:column; gap:9px; min-width:0; pointer-events:none; }
+    .orbit-tag { position:relative !important; inset:auto !important; display:flex; flex-direction:column; gap:4px; width:100%; max-width:none; min-width:0; padding:10px 11px; border:1px solid color-mix(in srgb, var(--tag-color, #9da9c5) 30%, transparent); border-radius:11px; background:rgba(9,11,17,.70); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); box-shadow:0 8px 28px rgba(0,0,0,.16); color:var(--tag-color, #c3cadb); opacity:.92; animation:tagFloat 7s ease-in-out infinite alternate; overflow-wrap:anywhere; }
+    .orbit-tag:nth-child(2n) { animation-delay:-2.5s; }
+    .orbit-tag:nth-child(3n) { animation-delay:-4s; }
+    .orbit-label { font-size:9px; text-transform:uppercase; letter-spacing:.12em; color:var(--tag-color, #c3cadb); }
+    .orbit-quote { color:#e2e4eb; font-family:Georgia,serif; font-size:12px; line-height:1.4; }
+    .orbit-score { color:#737988; font-size:9px; }
+    .stage-placeholder { position:absolute; z-index:0; inset:0; display:grid; place-items:center; color:rgba(184,190,205,.0); pointer-events:none; }
+    .eyebrow { display:flex; align-items:center; gap:12px; color:#8d919d; text-transform:uppercase; letter-spacing:.22em; font-size:10px; margin-bottom:22px; }
+    .eyebrow::before { content:""; width:27px; height:1px; background:hsl(var(--mood-hue) 68% 65% / .72); transition:background 1s var(--ease); }
+    h1 { margin:0 0 21px; max-width:690px; font-size:clamp(40px, 6.4vw, 78px); line-height:.99; font-weight:430; letter-spacing:-.065em; }
+    h1 span { color:rgba(244,245,248,.42); font-weight:350; }
+    .subhead { margin:0 0 38px; max-width:470px; color:#8c8f9b; font-size:14px; line-height:1.8; }
+
+    .thought-stage { display:grid; grid-template-columns:minmax(0, 1fr) minmax(145px, 178px); column-gap:clamp(14px, 2vw, 24px); align-items:start; position:relative; isolation:isolate; margin-top:10px; }
+    .writing-frame { grid-column:1; grid-row:1; position:relative; z-index:1; min-width:0; }
+    .writing-frame::before { content:""; position:absolute; left:-22px; top:4px; bottom:4px; width:1px; background:linear-gradient(180deg, transparent, hsl(var(--mood-hue) 70% 60% / .35), transparent); transition:background 1s var(--ease); }
+    #writingCanvas {
+      width:100%; min-height:230px; max-height:46svh; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere;
+      padding:0 3px 6px 0; border:0; outline:none; background:transparent; color:#e9e9ee;
+      font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+      font-size:clamp(18px, 1.8vw, 24px); line-height:1.55; font-weight:400; letter-spacing:-.015em;
+      caret-color:hsl(var(--mood-hue) 88% 76%); text-shadow:0 0 28px hsl(var(--mood-hue) 80% 60% / .07);
+      transition:color .6s var(--ease), caret-color .9s var(--ease), text-shadow .9s var(--ease);
+    }
+    #writingCanvas:empty::before { content:attr(data-placeholder); color:rgba(225,227,234,.31); pointer-events:none; }
+    #writingCanvas::-webkit-scrollbar { width:4px; }
+    #writingCanvas::-webkit-scrollbar-thumb { border-radius:10px; background:rgba(255,255,255,.15); }
+
+    .input-hint { margin-top:18px; color:#666b77; font-size:11px; letter-spacing:.025em; }
+    .input-hint kbd { display:inline-block; margin:0 2px; padding:3px 6px; border:1px solid rgba(255,255,255,.12); border-radius:5px; color:#a4a7b2; font:inherit; }
+
+    .footer { align-items:flex-end; border-top:1px solid rgba(255,255,255,.085); padding-top:17px; min-height:58px; }
+    .engine { display:grid; grid-template-columns:7px minmax(0,1fr); column-gap:9px; row-gap:4px; align-items:center; min-width:0; }
+    .engine-indicator { width:7px; height:7px; border-radius:50%; flex:0 0 auto; background:#686d79; transition:background .3s; }
+    .engine-indicator.loading { background:#e0b66d; animation:pulse 1.1s ease-in-out infinite; }
+    .engine-indicator.ready { background:#81d2b3; box-shadow:0 0 10px rgba(129,210,179,.45); }
+    .engine-indicator.error { background:#ee817f; }
+    .engine-text { min-width:0; }
+    .engine-title { font-size:11px; color:#c8cbd4; }
+    .engine-detail { margin-top:3px; color:#858b99; font-size:10px; line-height:1.45; }
+    .engine-progress { grid-column:2; display:flex; align-items:center; gap:8px; min-width:0; }
+    .engine-progress[hidden] { display:none; }
+    .progress-track { position:relative; flex:1 1 90px; min-width:48px; height:4px; overflow:hidden; border-radius:999px; background:rgba(255,255,255,.10); }
+    .progress-fill { display:block; width:0; height:100%; border-radius:inherit; background:hsl(var(--mood-hue) 74% 72%); transition:width .35s ease, background .5s ease; }
+    .engine-progress[data-indeterminate="true"] .progress-fill { width:38%; animation:progressSweep 1.25s ease-in-out infinite alternate; }
+    .progress-copy { flex:0 0 auto; color:#a0a5b1; font-size:9px; white-space:nowrap; }
+    .footer-right { display:flex; align-items:center; gap:16px; }
+    .stats { display:flex; gap:12px; color:#6f7380; font-size:10px; white-space:nowrap; }
+    .btn {
+      display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:38px; padding:0 15px;
+      border:1px solid rgba(255,255,255,.2); border-radius:999px; background:rgba(255,255,255,.055); color:#e9eaf0;
+      font-size:11px; letter-spacing:.025em; cursor:pointer; transition:background .2s, border-color .2s, transform .2s;
+    }
+    .btn:hover { background:rgba(255,255,255,.11); border-color:rgba(255,255,255,.34); }
+    .btn:active { transform:scale(.98); }
+    .btn.primary { color:#10141a; border-color:transparent; background:hsl(var(--mood-hue) 68% 76%); font-weight:650; transition:background .8s var(--ease), transform .2s; }
+    .btn.primary:hover { background:hsl(var(--mood-hue) 78% 84%); }
+    .btn:disabled { cursor:default; opacity:.58; }
+    .clear-btn { color:#858995; background:transparent; border-color:transparent; padding:0 4px; }
+
+    .notice { max-width:240px; color:#676c78; font-size:9px; line-height:1.5; text-align:right; }
+    @keyframes breathe { from { margin-top:-1.6%; opacity:.65; } to { margin-top:1.6%; opacity:1; } }
+    @keyframes pulse { 50% { opacity:.35; } }
+    @keyframes progressSweep { from { transform:translateX(-20%); } to { transform:translateX(180%); } }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(calc(-50% + 7px)); } to { opacity:1; transform:translateY(-50%); } }
+
+    @media (max-width:1040px) {
+      .workspace { grid-template-columns:minmax(0, 1fr) minmax(245px, 300px); gap:28px; }
+      .thought-stage { grid-template-columns:minmax(0, 1fr) minmax(132px, 155px); column-gap:14px; }
+      .orbit-tag { padding:9px 9px; }
+      .orbit-label { font-size:8px; }
+    }
+    @media (max-width:820px) {
+      .topbar { align-items:flex-start; flex-direction:column; gap:14px; }
+      .topbar-tools { justify-content:space-between; width:100%; }
+      .engine { flex:1 1 auto; }
+      .workspace { grid-template-columns:minmax(0, 1fr); gap:24px; width:min(760px,100%); padding:42px 0 30px; }
+      .insight-column { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; }
+      .insight-card:first-child { grid-column:1 / -1; }
+      /* On tablet/mobile, annotations become a separate strip below the text. */
+      .thought-stage { display:flex; flex-direction:column; gap:0; }
+      .writing-frame { order:0; width:100%; }
+      .tag-constellation { order:1; position:relative; inset:auto; width:100%; display:flex; flex-direction:row; flex-wrap:wrap; gap:7px; margin:14px 0 0; }
+      .orbit-tag { position:relative !important; inset:auto !important; flex:1 1 180px; width:auto; max-width:100%; animation:none; padding:8px 9px; }
+      .orbit-quote { font-size:11px; }
+      .workspace { align-self:start; }
+    }
+    @media (max-width:560px) {
+      .app { min-height:100svh; padding:calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left)); }
+      .topbar { gap:13px; }
+      .brand-group { width:100%; justify-content:space-between; gap:10px; }
+      .topbar-tools { gap:8px; }
+      .engine-title { font-size:10px; }
+      .engine-detail { font-size:9px; }
+      .engine-progress { gap:6px; }
+      .progress-copy { font-size:8px; }
+      .brand { gap:8px; font-size:10px; letter-spacing:.1em; }
+      .brand-mark { width:25px; height:25px; }
+      .privacy { gap:6px; font-size:9px; white-space:nowrap; }
+      .workspace { padding:32px 0 24px; gap:22px; }
+      .eyebrow { margin-bottom:18px; font-size:9px; letter-spacing:.18em; }
+      h1 { font-size:clamp(34px, 9vw, 46px); line-height:1.02; margin-bottom:16px; }
+      .subhead { font-size:12px; line-height:1.65; margin-bottom:18px; }
+      #writingCanvas { min-height:clamp(190px, 32svh, 280px); max-height:none; overflow:visible; font-size:clamp(16px, 4.3vw, 19px); line-height:1.6; }
+      .writing-frame::before { left:-8px; }
+      .input-hint { font-size:10px; line-height:1.6; }
+      .insight-card { padding:15px 14px; }
+      .card-title { font-size:20px; }
+      .reflection-question { margin-top:12px; padding-top:10px; font-size:14px; }
+      .card-copy { font-size:10px; line-height:1.65; }
+      .orbit-tag { flex-basis:100%; }
+      .insight-column { grid-template-columns:minmax(0,1fr); }
+      .insight-card:first-child { grid-column:auto; }
+      .footer { align-items:stretch; flex-direction:column; gap:13px; }
+      .engine { align-items:flex-start; }
+      .engine-detail { max-width:44ch; }
+      .footer-right { width:100%; display:grid; grid-template-columns:1fr auto auto; gap:8px; align-items:center; }
+      .stats { grid-column:1 / -1; justify-content:space-between; gap:8px; }
+      .btn { min-height:44px; padding-inline:13px; }
+      .clear-btn { padding-inline:9px; }
+      .response-option { min-height:40px; }
+      .notice { max-width:none; text-align:left; }
+    }
+    @media (max-width:360px) {
+      .privacy { font-size:8px; letter-spacing:0; }
+      .brand { font-size:9px; }
+      .topbar-tools { display:grid; grid-template-columns:minmax(0,1fr); }
+      .topbar-tools .btn.primary { width:100%; }
+      .footer-right { grid-template-columns:1fr auto; }
+      .stats { grid-column:1 / -1; }
+    }
+    @media (prefers-reduced-motion:reduce) {
+      *,*::before,*::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; scroll-behavior:auto !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene" aria-hidden="true">
+    <div class="aura"></div><div class="grain"></div><div class="vignette"></div>
+  </div>
+
+  <main class="app">
+    <header class="topbar">
+      <div class="brand-group">
+        <div class="brand"><span class="brand-mark" aria-hidden="true">◌</span><span>Thoughts, Unfolded</span></div>
+        <div class="privacy"><span class="privacy-dot"></span><span>In-browser inference</span></div>
+      </div>
+      <div class="topbar-tools" data-ready="false">
+        <div class="engine" role="status" aria-live="polite">
+          <span id="engineIndicator" class="engine-indicator"></span>
+          <div class="engine-text">
+            <div id="engineTitle" class="engine-title">Getting your thought space ready</div>
+            <div id="engineDetail" class="engine-detail">You can start writing while the model loads.</div>
+          </div>
+          <div id="modelProgress" class="engine-progress" data-indeterminate="true" role="progressbar" aria-label="Model download progress" aria-valuemin="0" aria-valuemax="100" aria-valuetext="Preparing model" hidden>
+            <span class="progress-track" aria-hidden="true"><span id="modelProgressFill" class="progress-fill"></span></span>
+            <span id="modelProgressText" class="progress-copy">Preparing…</span>
+          </div>
+        </div>
+        <button id="activateButton" class="btn primary" type="button"><span aria-hidden="true">◌</span><span>Preparing model…</span></button>
+      </div>
+    </header>
+
+    <section class="workspace" aria-labelledby="page-title">
+      <div class="writer-column">
+        <div class="eyebrow">A space for noticing</div>
+        <h1 id="page-title">Write what<br><span>moves through you.</span></h1>
+        <p class="subhead">Let the thought arrive without editing it for anyone. Notice the words, the feelings around them, and the patterns that begin to emerge.</p>
+
+        <div class="thought-stage">
+          <div id="tagConstellation" class="tag-constellation" aria-live="polite" aria-label="Emotion tags from your writing"></div>
+          <div class="writing-frame">
+            <div id="writingCanvas" contenteditable="true" role="textbox" aria-label="Your writing canvas" aria-multiline="true" spellcheck="false" data-placeholder="I’ve been thinking about…"></div>
+          </div>
+        </div>
+        <div class="input-hint">A quiet space to think. <kbd>Enter</kbd> to begin another line. Tags are hypotheses, not verdicts.</div>
+      </div>
+
+      <aside class="insight-column" aria-label="Metacognitive reflection">
+        <section class="insight-card" aria-live="polite">
+          <div class="card-kicker">The pattern beneath the words</div>
+          <h2 id="patternTitle" class="card-title">Waiting for a thought</h2>
+          <p id="patternSummary" class="card-copy">As you write, Thoughts, Unfolded will look for coexisting emotional signals and offer a tentative reflection on what they may be gathering around.</p>
+          <div id="patternSignals" class="pattern-signals"></div>
+          <div id="reflectionQuestion" class="reflection-question">What feels most present for you right now?</div>
+          <div class="fit-check" role="group" aria-label="Does this reflection fit your experience?">
+            <button class="fit-choice" type="button" data-fit="yes" aria-pressed="false">Yes, mostly</button>
+            <button class="fit-choice" type="button" data-fit="partial" aria-pressed="false">Partly</button>
+            <button class="fit-choice" type="button" data-fit="no" aria-pressed="false">Not quite</button>
+          </div>
+          <p id="fitFeedback" class="fit-feedback" aria-live="polite"></p>
+          <p class="caveat">This is a language-based hypothesis, not a psychological assessment. You decide what fits.</p>
+        </section>
+
+        <section class="insight-card emotion-guide" aria-live="polite" aria-labelledby="emotionGuideTitle">
+          <div class="card-kicker">A gentle next step</div>
+          <h2 id="emotionGuideTitle" class="card-title">How might I work with this feeling?</h2>
+          <p id="emotionMeaning" class="card-copy">A feeling can be information, not an instruction. As you write, Thoughts, Unfolded can offer a few possibilities to consider.</p>
+          <ul id="emotionActions" class="emotion-actions">
+            <li>Name the feeling in your own words.</li>
+            <li>Notice what it brings up in your body and what it urges you to do.</li>
+            <li>Choose one small, kind next step that fits your situation.</li>
+          </ul>
+          <p class="caveat">These are reflection prompts, not treatment or a diagnosis. Keep what fits and leave the rest.</p>
+        </section>
+
+        <section class="insight-card" aria-labelledby="continueTitle">
+          <div class="card-kicker">Choose your next step</div>
+          <h2 id="continueTitle" class="card-title">What would help right now?</h2>
+          <p class="card-copy">After you write, choose what would be useful next. There’s no need to label the feeling again.</p>
+          <div class="response-options" role="group" aria-label="Ways to work with what you wrote">
+            <button class="response-option" type="button" data-route="settle" aria-pressed="false">I feel overwhelmed; help me settle first</button>
+            <button class="response-option" type="button" data-route="understand" aria-pressed="false">Help me make sense of what happened</button>
+            <button class="response-option" type="button" data-route="act" aria-pressed="false">I’m ready to decide what to do</button>
+            <button class="response-option" type="button" data-route="pause" aria-pressed="false">I want to set this aside for now</button>
+            <button class="response-option" type="button" data-route="unsure" aria-pressed="false">I’m not sure yet</button>
+          </div>
+          <div id="responseDetail" class="response-detail" aria-live="polite" aria-atomic="true">
+            <p id="responseAdvice"></p>
+            <p id="responsePrompt" class="response-prompt"></p>
+            <button id="responseAdd" class="response-add" type="button">Add this prompt to my notes</button>
+          </div>
+          <p class="caveat">These are optional reflection ideas, not a diagnosis or instructions. Keep what fits and leave the rest.</p>
+        </section>
+      </aside>
+    </section>
+
+    <footer class="footer">
+      <div class="footer-right">
+        <div class="stats"><span id="wordCount">0 words</span><span id="charCount">0 characters</span></div>
+        <button id="clearButton" class="btn clear-btn" type="button" title="Clear the canvas">Clear</button>
+      </div>
+    </footer>
+  </main>
+
+  <script type="module">
+    const MODEL_ID = 'SamLowe/roberta-base-go_emotions-onnx';
+    const TRANSFORMERS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1';
+
+    const editor = document.querySelector('#writingCanvas');
+    const indicator = document.querySelector('#engineIndicator');
+    const engineTitle = document.querySelector('#engineTitle');
+    const engineDetail = document.querySelector('#engineDetail');
+    const topbarTools = document.querySelector('.topbar-tools');
+    const activateButton = document.querySelector('#activateButton');
+    const modelProgress = document.querySelector('#modelProgress');
+    const modelProgressFill = document.querySelector('#modelProgressFill');
+    const modelProgressText = document.querySelector('#modelProgressText');
+    const clearButton = document.querySelector('#clearButton');
+    const wordCount = document.querySelector('#wordCount');
+    const charCount = document.querySelector('#charCount');
+    const tagConstellation = document.querySelector('#tagConstellation');
+    const patternTitle = document.querySelector('#patternTitle');
+    const patternSummary = document.querySelector('#patternSummary');
+    const patternSignals = document.querySelector('#patternSignals');
+    const reflectionQuestion = document.querySelector('#reflectionQuestion');
+    const emotionMeaning = document.querySelector('#emotionMeaning');
+    const emotionActions = document.querySelector('#emotionActions');
+    const responseOptions = document.querySelector('.response-options');
+    const responseDetail = document.querySelector('#responseDetail');
+    const responseAdvice = document.querySelector('#responseAdvice');
+    const responsePrompt = document.querySelector('#responsePrompt');
+    const responseAdd = document.querySelector('#responseAdd');
+    let selectedResponsePrompt = '';
+    const fitCheck = document.querySelector('.fit-check');
+    const fitFeedback = document.querySelector('#fitFeedback');
+
+    let worker = null;
+    let workerUrl = null;
+    let modelReady = false;
+    let modelLoading = false;
+    let debounceTimer = null;
+    let revision = 0;
+    let latestSentId = 0;
+    let currentSegments = [];
+    const emotionColors = {
+      joy: { hue: 148, name: 'joy' }, optimism: { hue: 150, name: 'optimism' }, gratitude: { hue: 142, name: 'gratitude' }, pride: { hue: 158, name: 'pride' }, relief: { hue: 165, name: 'relief' }, excitement: { hue: 36, name: 'excitement' }, amusement: { hue: 42, name: 'amusement' }, admiration: { hue: 185, name: 'admiration' }, approval: { hue: 166, name: 'approval' }, caring: { hue: 170, name: 'caring' }, love: { hue: 330, name: 'love' },
+      sadness: { hue: 238, name: 'sadness' }, disappointment: { hue: 250, name: 'disappointment' }, grief: { hue: 260, name: 'grief' }, remorse: { hue: 275, name: 'remorse' }, embarrassment: { hue: 300, name: 'embarrassment' }, nervousness: { hue: 280, name: 'nervousness' }, fear: { hue: 286, name: 'fear' },
+      anger: { hue: 354, name: 'anger' }, annoyance: { hue: 8, name: 'annoyance' }, disapproval: { hue: 18, name: 'disapproval' }, disgust: { hue: 82, name: 'disgust' },
+      desire: { hue: 324, name: 'desire' }, curiosity: { hue: 205, name: 'curiosity' }, confusion: { hue: 218, name: 'confusion' }, realization: { hue: 48, name: 'realization' }, surprise: { hue: 40, name: 'surprise' }, neutral: { hue: 194, name: 'neutral' }
+    };
+
+    const emotionGroups = {
+      joy: ['admiration', 'amusement', 'approval', 'caring', 'excitement', 'gratitude', 'joy', 'love', 'optimism', 'pride', 'relief'],
+      sadness: ['disappointment', 'embarrassment', 'grief', 'remorse', 'sadness'],
+      fear: ['fear', 'nervousness'],
+      anger: ['anger', 'annoyance', 'disapproval'],
+      disgust: ['disgust'],
+      surprise: ['surprise', 'realization'],
+      desire: ['desire'],
+      curiosity: ['curiosity', 'confusion'],
+      neutral: ['neutral']
+    };
+
+    function getVisualGroup(label) {
+      return Object.keys(emotionGroups).find(group => emotionGroups[group].includes(label)) || 'curiosity';
+    }
+
+    function colorFor(label) {
+      return emotionColors[label]?.hue ?? 194;
+    }
+
+    function setEngine(state, title, detail) {
+      const compactReady = modelReady && state === 'ready';
+      topbarTools.dataset.ready = String(compactReady);
+      indicator.className = `engine-indicator ${state}`.trim();
+      engineTitle.textContent = compactReady ? 'Model ready' : title;
+      engineDetail.textContent = compactReady ? '' : detail;
+    }
+
+    function showModelProgress(info = {}) {
+      modelProgress.hidden = false;
+      const label = info.status === 'progress_total' ? 'Overall download' : 'Model download';
+      const progress = Number.isFinite(info.progress) ? Math.max(0, Math.min(100, info.progress)) : null;
+      if (progress === null) {
+        modelProgress.dataset.indeterminate = 'true';
+        modelProgress.removeAttribute('aria-valuenow');
+        modelProgress.setAttribute('aria-valuetext', info.status === 'initiate' ? 'Preparing model files' : 'Downloading model files');
+        modelProgressText.textContent = info.status === 'initiate' ? 'Preparing…' : 'Downloading…';
+        return;
+      }
+      modelProgress.dataset.indeterminate = 'false';
+      modelProgress.setAttribute('aria-valuenow', String(Math.round(progress)));
+      modelProgress.setAttribute('aria-valuetext', `${label}: ${Math.round(progress)}%`);
+      modelProgressFill.style.width = `${progress}%`;
+      modelProgressText.textContent = `${Math.round(progress)}%`;
+    }
+
+    function hideModelProgress() {
+      modelProgress.hidden = true;
+      modelProgress.dataset.indeterminate = 'true';
+      modelProgressFill.style.width = '0';
+    }
+
+    function getWorkerSource() {
+      return `
+        import { pipeline } from '${TRANSFORMERS_URL}';
+        const MODEL_ID = '${MODEL_ID}';
+        let classifier = null;
+        let initPromise = null;
+        let pendingJob = null;
+        let running = false;
+
+        async function loadModel() {
+          if (classifier) return classifier;
+          if (!initPromise) {
+            initPromise = (async () => {
+              self.postMessage({ type: 'status', title: 'Getting your thought space ready', detail: 'The model is downloading in the background. You can start writing now.' });
+              classifier = await pipeline('text-classification', MODEL_ID, {
+                dtype: 'q8',
+                progress_callback: (info) => {
+                  if (['initiate', 'download', 'progress', 'progress_total'].includes(info.status)) {
+                    self.postMessage({ type: 'progress', status: info.status, progress: info.progress, file: info.file });
+                  }
+                }
+              });
+              self.postMessage({ type: 'ready' });
+              return classifier;
+            })().catch((error) => {
+              initPromise = null;
+              self.postMessage({ type: 'error', message: error?.message || String(error) });
+              throw error;
+            });
+          }
+          return initPromise;
+        }
+
+        function normaliseOutput(output) {
+          if (!Array.isArray(output)) return [];
+          const rows = Array.isArray(output[0]) ? output[0] : output;
+          return rows.map(row => ({ label: String(row.label || 'neutral').toLowerCase(), score: Number(row.score) || 0 }))
+            .sort((a, b) => b.score - a.score);
+        }
+
+        function splitSegments(text) {
+          return text.split(/(?<=[.!?])\\s+|\\n+/u).map(part => part.trim()).filter(part => part.length >= 8).slice(-5);
+        }
+
+        async function classify(text) {
+          const output = await classifier(text.slice(-1800), { top_k: null });
+          return normaliseOutput(output);
+        }
+
+        async function drainQueue() {
+          if (running || !pendingJob || !classifier) return;
+          running = true;
+          try {
+            while (pendingJob) {
+              const job = pendingJob;
+              pendingJob = null;
+              try {
+                const fullScores = await classify(job.text);
+                const segments = [];
+                const parts = splitSegments(job.text);
+                for (const part of parts) {
+                  const scores = await classify(part);
+                  segments.push({ text: part, scores });
+                }
+                self.postMessage({ type: 'result', id: job.id, scores: fullScores, segments });
+              } catch (error) {
+                self.postMessage({ type: 'inference-error', id: job.id, message: error?.message || String(error) });
+              }
+            }
+          } finally {
+            running = false;
+            if (pendingJob) void drainQueue();
+          }
+        }
+
+        self.onmessage = async ({ data }) => {
+          if (data?.type === 'init') {
+            try { await loadModel(); } catch (_) { }
+            return;
+          }
+          if (data?.type === 'analyze') {
+            if (!classifier) return;
+            pendingJob = data;
+            void drainQueue();
+          }
+        };
+      `;
+    }
+
+    function bootWorker() {
+      if (worker) return;
+      const blob = new Blob([getWorkerSource()], { type: 'text/javascript' });
+      workerUrl = URL.createObjectURL(blob);
+      worker = new Worker(workerUrl, { type: 'module', name: 'thoughts-unfolded-emotion-worker' });
+
+      worker.addEventListener('message', ({ data }) => {
+        if (data.type === 'status') {
+          showModelProgress({ status: 'initiate' });
+          setEngine('loading', data.title || 'Getting your thought space ready', data.detail || 'The model is downloading in the background. You can start writing now.');
+        } else if (data.type === 'progress') {
+          showModelProgress(data);
+          if (data.status === 'download' || data.status === 'progress' || data.status === 'progress_total') {
+            setEngine('loading', 'Downloading the model', 'Your writing stays here while the model prepares in the background.');
+          }
+        } else if (data.type === 'ready') {
+          modelReady = true;
+          modelLoading = false;
+          hideModelProgress();
+          activateButton.disabled = true;
+          activateButton.innerHTML = '<span aria-hidden="true">✓</span><span>Ready to reflect</span>';
+          setEngine('ready', 'Local model is ready', 'Thought analysis stays on this device; the page does not send writing to an inference API.');
+          queueAnalysis();
+        } else if (data.type === 'result') {
+          if (data.id !== latestSentId) return;
+          renderAnalysis(data.scores || [], data.segments || []);
+        } else if (data.type === 'inference-error') {
+          if (data.id !== latestSentId) return;
+          setEngine('error', 'Could not analyse this passage', data.message || 'Try a shorter passage.');
+        } else if (data.type === 'error') {
+          modelLoading = false;
+          modelReady = false;
+          hideModelProgress();
+          activateButton.disabled = false;
+          activateButton.innerHTML = '<span aria-hidden="true">↻</span><span>Retry model</span>';
+          setEngine('error', 'Model could not load', `${data.message || 'Check the connection.'} You can retry.`);
+        }
+      });
+
+      worker.addEventListener('error', (event) => {
+        console.error('Thoughts, Unfolded worker error:', event.message);
+        modelLoading = false;
+        modelReady = false;
+        hideModelProgress();
+        activateButton.disabled = false;
+        activateButton.innerHTML = '<span aria-hidden="true">↻</span><span>Retry model</span>';
+        setEngine('error', 'Browser worker failed', 'Try opening this page through a static host or local static server, then reload.');
+      });
+    }
+
+    function activateModel() {
+      if (modelReady || modelLoading) return;
+      modelLoading = true;
+      activateButton.disabled = true;
+      activateButton.innerHTML = '<span aria-hidden="true">◌</span><span>Preparing model…</span>';
+      showModelProgress({ status: 'initiate' });
+      setEngine('loading', 'Getting your thought space ready', 'You can start writing while the model downloads in the background.');
+      try {
+        bootWorker();
+        worker.postMessage({ type: 'init' });
+      } catch (error) {
+        modelLoading = false;
+        hideModelProgress();
+        activateButton.disabled = false;
+        activateButton.innerHTML = '<span aria-hidden="true">↻</span><span>Retry model</span>';
+        setEngine('error', 'Could not start worker', error.message || 'Check browser support and reload.');
+      }
+    }
+
+    function getAnalysisPassage(text) {
+      return text.trim().slice(-1800);
+    }
+
+    function updateStats() {
+      const text = editor.innerText || '';
+      const words = text.trim() ? text.trim().split(/\s+/u).length : 0;
+      wordCount.textContent = `${words} ${words === 1 ? 'word' : 'words'}`;
+      charCount.textContent = `${text.length} ${text.length === 1 ? 'character' : 'characters'}`;
+    }
+
+    function queueAnalysis() {
+      clearTimeout(debounceTimer);
+      const passage = getAnalysisPassage(editor.innerText || '');
+      const currentRevision = ++revision;
+      if (!passage || passage.length < 8) {
+        clearSignals();
+        if (modelReady) setEngine('ready', 'Local model is ready', 'Write a little more to produce language signals.');
+        else setEngine('', 'The model is resting', 'Activate local emotion analysis when you’re ready.');
+        return;
+      }
+      if (!modelReady) return;
+
+      debounceTimer = setTimeout(() => {
+        if (!worker || !modelReady || currentRevision !== revision) return;
+        latestSentId = currentRevision;
+        worker.postMessage({ type: 'analyze', id: latestSentId, text: passage });
+        setEngine('loading', 'Following the thought', 'Mapping the current passage and its recent sentences…');
+      }, 850);
+    }
+
+    function topMeaningful(scores, limit = 3) {
+      const list = [...scores].sort((a, b) => b.score - a.score);
+      const meaningful = list.filter(item => item.score >= 0.13);
+      return meaningful.slice(0, limit);
+    }
+
+    function excerpt(text, max = 74) {
+      const clean = text.replace(/\s+/gu, ' ').trim();
+      return clean.length > max ? `${clean.slice(0, max - 1).trimEnd()}…` : clean;
+    }
+
+    function renderTagConstellation(segments) {
+      currentSegments = segments;
+      tagConstellation.replaceChildren();
+      const candidates = segments.map((segment, index) => {
+        const useful = topMeaningful(segment.scores, 2).filter(item => item.label !== 'neutral');
+        return { ...segment, useful, index };
+      }).filter(segment => segment.useful.length > 0).slice(-5);
+
+      if (!candidates.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.textContent = 'Emotion tags will gather around the canvas as the model finds signals.';
+        tagConstellation.append(empty);
+        return;
+      }
+
+      candidates.forEach((segment, index) => {
+        const strongest = segment.useful[0];
+        const chip = document.createElement('div');
+        chip.className = 'orbit-tag';
+        chip.style.setProperty('--tag-color', `hsl(${colorFor(strongest.label)} 75% 76%)`);
+        const label = document.createElement('div');
+        label.className = 'orbit-label';
+        label.textContent = segment.useful.map(item => item.label).join(' · ');
+        const quote = document.createElement('div');
+        quote.className = 'orbit-quote';
+        quote.textContent = `“${excerpt(segment.text, 58)}”`;
+        const score = document.createElement('div');
+        score.className = 'orbit-score';
+        score.textContent = `Language signal · ${Math.round(strongest.score * 100)}% model score`;
+        chip.append(label, quote, score);
+        tagConstellation.append(chip);
+      });
+    }
+
+    function derivePattern(scores, segments) {
+      const top = topMeaningful(scores, 5).filter(item => item.label !== 'neutral');
+      const labels = new Set(top.map(item => item.label));
+      const allSegmentLabels = new Set(segments.flatMap(segment => topMeaningful(segment.scores, 4).map(item => item.label)));
+      const has = (...terms) => terms.some(term => labels.has(term) || allSegmentLabels.has(term));
+
+      const negative = has('sadness', 'disappointment', 'grief', 'fear', 'nervousness', 'anger', 'annoyance', 'remorse');
+      const positive = has('joy', 'optimism', 'relief', 'gratitude', 'excitement', 'pride');
+      const desire = has('desire', 'love', 'caring');
+      const selfJudgment = has('remorse', 'embarrassment', 'disapproval');
+      const uncertainty = has('confusion', 'nervousness', 'fear', 'curiosity', 'surprise');
+      const friction = has('anger', 'annoyance', 'disgust', 'disapproval');
+      const loss = has('sadness', 'disappointment', 'grief');
+
+      let meaning = top.length
+        ? 'Several labels can reflect more than one thread. Only you can tell what fits your context.'
+        : 'The model did not find a clear signal. You can use your own words instead of a label.';
+      let actions = [
+        'Name the feeling in your own words.',
+        'Notice what it brings up in your body and what it urges you to do.',
+        'Choose one small, kind next step that fits your situation.'
+      ];
+
+      if (loss && uncertainty) {
+        meaning = 'Sadness or disappointment alongside uncertainty may mean something matters while the next part is unclear. That is one possibility, not proof of what you need.';
+        actions = [
+          'Name the feeling about the present separately from the worry about what comes next.',
+          'Notice one thing you know and one thing you can influence.',
+          'Choose a small, reversible next step, or pause and reach out to someone you trust.'
+        ];
+      } else if (friction) {
+        meaning = 'Anger or irritation can accompany a crossed boundary or blocked need. The feeling may highlight something to examine, but it does not decide how to act.';
+        actions = [
+          'If you feel activated, give yourself a moment before responding.',
+          'Identify the specific event and the need or boundary involved.',
+          'When it feels safe, consider a clear request, limit, or repair.'
+        ];
+      } else if (selfJudgment) {
+        meaning = 'Remorse can point toward a value or a wish to repair. Shame can also turn one action into a judgment about your whole self.';
+        actions = [
+          'Separate what happened from what it says about you as a person.',
+          'If someone was harmed, consider one realistic repair.',
+          'Try speaking to yourself with the fairness you would offer a friend.'
+        ];
+      } else if (loss) {
+        meaning = 'Sadness may show that something mattered or has changed. You do not have to rush the feeling away.';
+        actions = [
+          'Let yourself name what feels lost or disappointing without judging it.',
+          'Consider one small act of care or connection today.',
+          'Take a practical step only if it feels useful; pausing is also an option.'
+        ];
+      } else if (desire) {
+        meaning = 'Wanting or connection-related feelings may point toward something you value or need. They are not a command to act.';
+        actions = [
+          'Ask what may be underneath the wish, such as closeness, comfort, play, or purpose.',
+          'Consider your boundaries and other people’s consent.',
+          'Choose a small step that fits your values, or decide to wait.'
+        ];
+      } else if (uncertainty) {
+        meaning = 'Uncertainty may mean you care about an outcome or need more information. Fear can be a cue to check safety; it is not a prediction.';
+        actions = [
+          'Separate what you know from what you are guessing.',
+          'If it helps, ground in the present: feel your feet and let your breathing slow.',
+          'Choose one manageable, reversible action or identify what information to seek.'
+        ];
+      } else if (positive) {
+        meaning = 'Joy or gratitude may point toward what feels nourishing or meaningful. You can let it be here without needing to justify it.';
+        actions = [
+          'Pause and notice what you want to remember about this moment.',
+          'Name the person, activity, or value that mattered to you.',
+          'Savor it, share appreciation, or make a little room for it again.'
+        ];
+      }
+
+      let title = top.length ? 'Several signals are present' : 'No clear signal yet';
+      let summary = top.length
+        ? 'The writing carries more than one possible emotional signal. Notice which parts feel connected and which may be separate threads.'
+        : 'The model did not return a clear language signal for this passage. You can add more context or use the thought sorter without a suggestion.';
+      let question = top.length
+        ? 'Which part feels most present for you: what you feel, what you want, or what you are telling yourself about it?'
+        : 'What feels most important to you here, regardless of what the model detected?';
+
+      if (desire && selfJudgment) {
+        title = 'Wanting meets an inner rule';
+        summary = 'A desire or pull appears alongside self-evaluation. The useful question may be less “Is this feeling allowed?” and more “What does this desire mean to me, and how do I want to respond to it?”';
+        question = 'What do you want, and what are you telling yourself about wanting it?';
+      } else if (negative && uncertainty && positive) {
+        title = 'Difficulty and possibility coexist';
+        summary = 'The passage includes difficult feelings alongside signals associated with hope, relief, or possibility. Mixed feelings can be real at the same time; one does not cancel the other.';
+        question = 'What feels difficult, and what possibility—however small—still matters to you?';
+      } else if (loss && uncertainty) {
+        title = 'Difficult feelings and uncertainty';
+        summary = 'The passage includes signals associated with difficult feelings alongside uncertainty or apprehension. It may help to separate what you are feeling now from what you are anticipating.';
+        question = 'What do you know from the present, and what are you predicting about the future?';
+      } else if (friction && loss) {
+        title = 'Hurt and resistance may overlap';
+        summary = 'Signals associated with frustration and sadness appear together. Sometimes a thought holds both the pain of something and resistance to how it is unfolding.';
+        question = 'What feels hurtful here, and what feels unacceptable or in need of change?';
+      } else if (desire && uncertainty) {
+        title = 'A pull toward something, with uncertainty';
+        summary = 'The passage includes wanting or connection-related signals alongside uncertainty. It may help to separate what attracts you from what you are unsure about.';
+        question = 'What draws you toward this, and what remains unclear?';
+      } else if (selfJudgment) {
+        title = 'Feeling and self-evaluation';
+        summary = 'The writing may include a feeling about an event and a second layer of judgment about yourself or your reaction. Those layers can be examined separately.';
+        question = 'What happened, what did you feel, and what are you telling yourself that feeling means about you?';
+      } else if (uncertainty) {
+        title = 'The mind is working with uncertainty';
+        summary = 'Questions, curiosity, surprise, or apprehension may be important in this passage. Uncertainty itself is a signal to notice, not a problem that must be solved immediately.';
+        question = 'What is known, what is imagined, and what is still unknown?';
+      } else if (positive) {
+        title = 'Energy, connection, or possibility';
+        summary = 'The writing contains signals that may relate to positive engagement, appreciation, or anticipation. You can notice what feels nourishing without needing to explain it away.';
+        question = 'What feels meaningful or alive here, and what is helping it matter?';
+      } else if (loss) {
+        title = 'Sadness or disappointment may be present';
+        summary = 'The passage includes language signals often associated with sadness, grief, or disappointment. See whether that fits your experience, and what feels most in need of care.';
+        question = 'What feels painful or disappointing, and what kind of support would help right now?';
+      } else if (friction) {
+        title = 'Frustration or resistance may be present';
+        summary = 'The passage includes language signals often associated with frustration, anger, or resistance. Consider what boundary, need, or change may matter to you.';
+        question = 'What feels unacceptable here, and what would you like to happen instead?';
+      }
+
+      if (top.length) {
+        const recurring = [...allSegmentLabels].filter(label => labels.has(label));
+        if (recurring.length >= 2) {
+          summary += ` Repeated or overlapping signals include ${recurring.slice(0, 3).join(', ')}.`;
+        }
+      }
+      return { title, summary, question, meaning, actions, top };
+    }
+
+    function renderEmotionGuide(pattern) {
+      emotionMeaning.textContent = pattern.meaning;
+      emotionActions.replaceChildren();
+      pattern.actions.forEach(action => {
+        const item = document.createElement('li');
+        item.textContent = action;
+        emotionActions.append(item);
+      });
+    }
+
+    function renderPattern(scores, segments) {
+      const pattern = derivePattern(scores, segments);
+      renderEmotionGuide(pattern);
+      patternTitle.textContent = pattern.title;
+      patternSummary.textContent = pattern.summary;
+      reflectionQuestion.textContent = pattern.question;
+      patternSignals.replaceChildren();
+      pattern.top.slice(0, 5).forEach(item => {
+        const chip = document.createElement('span');
+        chip.className = 'signal-chip';
+        chip.style.setProperty('--chip-color', `hsl(${colorFor(item.label)} 76% 72%)`);
+        const dot = document.createElement('span');
+        dot.className = 'dot';
+        const label = document.createElement('span');
+        label.textContent = item.label;
+        chip.append(dot, label);
+        patternSignals.append(chip);
+      });
+    }
+
+    function renderAnalysis(scores, segments) {
+      if (!scores.length) {
+        clearSignals();
+        setEngine('ready', 'Model is ready', 'Write a little more to produce language signals.');
+        return;
+      }
+      renderTagConstellation(segments);
+      renderPattern(scores, segments);
+      const top = topMeaningful(scores, 3).filter(item => item.label !== 'neutral');
+      const primary = top[0] || scores[0];
+      const hue = colorFor(primary.label);
+      const score = Math.max(0, Math.min(1, primary.score));
+      const root = document.documentElement;
+      root.style.setProperty('--mood-hue', hue);
+      root.style.setProperty('--mood-scale', primary.label === 'joy' || primary.label === 'optimism' ? 1.06 : ['anger', 'fear', 'nervousness'].includes(primary.label) ? 0.90 : 1);
+      root.style.setProperty('--mood-alpha', (0.07 + score * 0.19).toFixed(3));
+      root.dataset.emotionSignal = primary.label;
+      const labels = top.length ? top.map(item => item.label).join(' · ') : 'mixed or low-confidence signals';
+      setEngine('ready', `Signals in the writing: ${labels}`, 'Model scores describe language patterns, not a measured or definitive inner state.');
+    }
+
+    function clearSignals() {
+      tagConstellation.replaceChildren();
+      currentSegments = [];
+      fitCheck.querySelectorAll('[data-fit]').forEach(option => option.setAttribute('aria-pressed', 'false'));
+      fitFeedback.textContent = '';
+      selectedResponsePrompt = '';
+      responseOptions.querySelectorAll('[data-route]').forEach(option => option.setAttribute('aria-pressed', 'false'));
+      responseDetail.classList.remove('is-visible');
+      responseAdvice.textContent = '';
+      responsePrompt.textContent = '';
+      patternTitle.textContent = 'Waiting for a thought';
+      patternSummary.textContent = 'As you write, Thoughts, Unfolded will look for coexisting emotional signals and offer a tentative reflection on what they may be gathering around.';
+      patternSignals.replaceChildren();
+      reflectionQuestion.textContent = 'What feels most present for you right now?';
+      emotionMeaning.textContent = 'A feeling can be information, not an instruction. As you write, Thoughts, Unfolded can offer a few possibilities to consider.';
+      emotionActions.replaceChildren(
+        ...[
+          'Name the feeling in your own words.',
+          'Notice what it brings up in your body and what it urges you to do.',
+          'Choose one small, kind next step that fits your situation.'
+        ].map(action => {
+          const item = document.createElement('li');
+          item.textContent = action;
+          return item;
+        })
+      );
+      document.documentElement.style.setProperty('--mood-hue', 194);
+      document.documentElement.style.setProperty('--mood-scale', 1);
+      document.documentElement.style.setProperty('--mood-alpha', .15);
+      delete document.documentElement.dataset.emotionSignal;
+    }
+
+    const responseRoutes = {
+      settle: {
+        advice: 'You don’t have to solve the whole situation while you feel flooded. Take a moment to orient to where you are, loosen your shoulders, and let your next decision wait until you feel steadier.',
+        prompt: 'For this moment, what would help your body feel a little safer or more settled?'
+      },
+      understand: {
+        advice: 'Try separating what you know from what you fear or are assuming. Then notice what matters to you in this situation. You can hold more than one feeling without forcing a conclusion.',
+        prompt: 'What happened (facts)? What am I adding or predicting? What matters most to me here?'
+      },
+      act: {
+        advice: 'Look for one small, safe, reversible step within your control. That might be asking a question, setting a boundary, repairing something, or asking someone for support. You can also decide that now is not the right time to act.',
+        prompt: 'What is one small step I can take, and what support or information would make it easier?'
+      },
+      pause: {
+        advice: 'It can be okay to acknowledge a feeling and give it less attention for now, especially when the issue is minor or cannot be solved in this moment. That is different from telling yourself the feeling is not allowed. If it still matters, choose a time or cue to revisit it.',
+        prompt: 'I’m setting this down for now because… I’ll check back in when…'
+      },
+      unsure: {
+        advice: 'You do not need to reach a conclusion yet. Start with the part that feels loudest, or choose one gentle action such as taking a break, getting more information, or talking it through with someone you trust.',
+        prompt: 'What feels most urgent right now—and what can safely wait?'
+      }
+    };
+
+    const fitMessages = {
+      yes: 'Keep the parts that feel true. Your context gives them meaning.',
+      partial: 'That makes sense. A few signals can overlap; you can add what the reflection missed in your own words.',
+      no: 'That’s okay. The model reads language patterns, not your inner state. You can ignore its label and still use any next step.'
+    };
+
+    fitCheck.addEventListener('click', event => {
+      const button = event.target.closest('[data-fit]');
+      if (!button) return;
+      fitCheck.querySelectorAll('[data-fit]').forEach(option => option.setAttribute('aria-pressed', String(option === button)));
+      fitFeedback.textContent = fitMessages[button.dataset.fit];
+    });
+
+    responseOptions.addEventListener('click', event => {
+      const button = event.target.closest('[data-route]');
+      if (!button) return;
+      responseOptions.querySelectorAll('[data-route]').forEach(option => option.setAttribute('aria-pressed', String(option === button)));
+      const route = responseRoutes[button.dataset.route];
+      selectedResponsePrompt = route.prompt;
+      responseAdvice.textContent = route.advice;
+      responsePrompt.textContent = route.prompt;
+      responseDetail.classList.add('is-visible');
+    });
+
+    responseAdd.addEventListener('click', () => {
+      if (!selectedResponsePrompt) return;
+      const text = (editor.innerText || '').replace(/\s+$/u, '');
+      editor.textContent = `${text}${text ? '\n\n' : ''}${selectedResponsePrompt}`;
+      editor.focus();
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      editor.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    editor.addEventListener('input', () => {
+      updateStats();
+      queueAnalysis();
+    });
+
+    activateButton.addEventListener('click', activateModel);
+    clearButton.addEventListener('click', () => {
+      editor.replaceChildren();
+      updateStats();
+      revision++;
+      clearTimeout(debounceTimer);
+      clearSignals();
+      if (modelReady) setEngine('ready', 'Local model is ready', 'Canvas cleared. This page does not save your writing automatically.');
+      else setEngine('', 'The model is resting', 'Activate local emotion analysis when you’re ready.');
+      editor.focus();
+    });
+
+    window.addEventListener('beforeunload', () => {
+      if (worker) worker.terminate();
+      if (workerUrl) URL.revokeObjectURL(workerUrl);
+    });
+
+    updateStats();
+    window.setTimeout(activateModel, 300);
+  </script>
+</body>
+</html>
+
